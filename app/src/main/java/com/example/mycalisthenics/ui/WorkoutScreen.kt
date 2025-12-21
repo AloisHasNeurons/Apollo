@@ -1,6 +1,5 @@
 package com.example.mycalisthenics.ui
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -11,9 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -27,21 +24,33 @@ import kotlin.math.ceil
 @Composable
 fun WorkoutScreen(
     onBack: () -> Unit,
+    onShowRecap: () -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
     val workout by viewModel.activeWorkout.collectAsState()
     val currentExerciseIndex by viewModel.currentExerciseIndex.collectAsState()
     val currentSetIndex by viewModel.currentSetIndex.collectAsState()
+    val suggestedReps by viewModel.suggestedReps.collectAsState()
+    val workoutResults by viewModel.workoutResults.collectAsState()
+    val showRecap by viewModel.showRecap.collectAsState()
     val isFrench = viewModel.isFrench()
 
+    LaunchedEffect(showRecap) {
+        if (showRecap) {
+            onShowRecap()
+        }
+    }
+
     val exercise = workout?.exercises?.getOrNull(currentExerciseIndex)
+    val totalSets = 3 
+    val totalExercises = workout?.exercises?.size ?: 1
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "${currentSetIndex + 1} / 3",
+                        text = if (isFrench) "Série ${currentSetIndex + 1} / $totalSets" else "Set ${currentSetIndex + 1} / $totalSets",
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -65,47 +74,65 @@ fun WorkoutScreen(
             }
         }
     ) { paddingValues ->
-        exercise?.let { ex ->
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LinearProgressIndicator(
+                progress = { (currentExerciseIndex + 1).toFloat() / totalExercises },
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = if (isFrench) ex.nameFr else ex.nameEn,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = if (isFrench) ex.descriptionFr else ex.descriptionEn,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                strokeCap = StrokeCap.Round
+            )
+            
+            Text(
+                text = if (isFrench) "Exercice ${currentExerciseIndex + 1} / $totalExercises" else "Exercise ${currentExerciseIndex + 1} / $totalExercises",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = MaterialTheme.colorScheme.secondary
+            )
 
-                if (ex.postureTips.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
+            exercise?.let { ex ->
+                val suggested = suggestedReps[ex.id] ?: ex.targetedReps
+                val currentVal = workoutResults[ex.id]?.getOrNull(currentSetIndex) ?: suggested
+                
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = "Tip: ${ex.postureTips.first()}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        text = if (isFrench) ex.nameFr else ex.nameEn,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
-                }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = if (isFrench) ex.descriptionFr else ex.descriptionEn,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                Spacer(modifier = Modifier.height(48.dp))
+                    Spacer(modifier = Modifier.height(48.dp))
 
-                if (ex.unit == ExerciseUnit.TIME) {
-                    TimerSection(viewModel)
-                } else {
-                    RepsSection(ex.targetedReps)
+                    if (ex.unit == ExerciseUnit.TIME) {
+                        TimerSection(viewModel)
+                    } else {
+                        key(ex.id, currentSetIndex) {
+                            RepsSection(
+                                initialReps = currentVal,
+                                onRepsChanged = { viewModel.updateResult(ex.id, currentSetIndex, it) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -113,12 +140,12 @@ fun WorkoutScreen(
 }
 
 @Composable
-fun RepsSection(targetReps: Int) {
-    var actualReps by remember { mutableStateOf(targetReps.toString()) }
+fun RepsSection(initialReps: Int, onRepsChanged: (Int) -> Unit) {
+    var actualReps by remember { mutableStateOf(initialReps.toString()) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = targetReps.toString(),
+            text = initialReps.toString(),
             style = MaterialTheme.typography.displayLarge.copy(fontSize = 100.sp),
             fontWeight = FontWeight.Black
         )
@@ -127,7 +154,10 @@ fun RepsSection(targetReps: Int) {
         
         OutlinedTextField(
             value = actualReps,
-            onValueChange = { actualReps = it },
+            onValueChange = { 
+                actualReps = it
+                it.toIntOrNull()?.let { reps -> onRepsChanged(reps) }
+            },
             label = { Text("Reps performed") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.width(150.dp),
