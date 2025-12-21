@@ -119,14 +119,19 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val workout = _activeWorkout.value ?: return
         stopTimer()
         
-        val totalSets = 3 // Standard for this app as per requirements
-        
-        if (_currentSetIndex.value < totalSets - 1) {
-            _currentSetIndex.value += 1
-        } else if (_currentExerciseIndex.value < workout.exercises.size - 1) {
+        val totalSets = 3 
+        val totalExercises = workout.exercises.size
+
+        // Circuit rotation logic: Exercise 1 (Set 1) -> Exercise 2 (Set 1) -> ... -> Exercise 1 (Set 2)
+        if (_currentExerciseIndex.value < totalExercises - 1) {
+            // Next exercise in the same set
             _currentExerciseIndex.value += 1
-            _currentSetIndex.value = 0
+        } else if (_currentSetIndex.value < totalSets - 1) {
+            // Back to first exercise, but next set
+            _currentExerciseIndex.value = 0
+            _currentSetIndex.value += 1
         } else {
+            // All exercises and all sets finished
             _activeWorkout.value = null
         }
         resetTimer()
@@ -160,7 +165,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             _isDelaying.value = false
             _isTimerRunning.value = true
             
-            val startTime = _timerSeconds.value
             while (_timerSeconds.value > 0 && _isTimerRunning.value) {
                 delay(100)
                 _timerSeconds.value -= 0.1f
