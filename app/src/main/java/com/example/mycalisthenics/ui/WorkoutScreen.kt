@@ -24,16 +24,25 @@ import kotlin.math.ceil
 @Composable
 fun WorkoutScreen(
     onBack: () -> Unit,
+    onShowRecap: () -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
     val workout by viewModel.activeWorkout.collectAsState()
     val currentExerciseIndex by viewModel.currentExerciseIndex.collectAsState()
     val currentSetIndex by viewModel.currentSetIndex.collectAsState()
     val suggestedReps by viewModel.suggestedReps.collectAsState()
+    val workoutResults by viewModel.workoutResults.collectAsState()
+    val showRecap by viewModel.showRecap.collectAsState()
     val isFrench = viewModel.isFrench()
 
+    LaunchedEffect(showRecap) {
+        if (showRecap) {
+            onShowRecap()
+        }
+    }
+
     val exercise = workout?.exercises?.getOrNull(currentExerciseIndex)
-    val totalSets = 3 // This is hardcoded in ViewModel for now
+    val totalSets = 3 
     val totalExercises = workout?.exercises?.size ?: 1
 
     Scaffold(
@@ -70,7 +79,6 @@ fun WorkoutScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Exercise Progress within the current set
             LinearProgressIndicator(
                 progress = { (currentExerciseIndex + 1).toFloat() / totalExercises },
                 modifier = Modifier
@@ -88,6 +96,7 @@ fun WorkoutScreen(
 
             exercise?.let { ex ->
                 val suggested = suggestedReps[ex.id] ?: ex.targetedReps
+                val currentVal = workoutResults[ex.id]?.getOrNull(currentSetIndex) ?: suggested
                 
                 Column(
                     modifier = Modifier
@@ -112,24 +121,16 @@ fun WorkoutScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    if (ex.postureTips.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Tip: ${ex.postureTips.first()}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-
                     Spacer(modifier = Modifier.height(48.dp))
 
                     if (ex.unit == ExerciseUnit.TIME) {
                         TimerSection(viewModel)
                     } else {
-                        // Use key to force reset the state when exercise or set changes
                         key(ex.id, currentSetIndex) {
-                            RepsSection(suggested)
+                            RepsSection(
+                                initialReps = currentVal,
+                                onRepsChanged = { viewModel.updateResult(ex.id, currentSetIndex, it) }
+                            )
                         }
                     }
                 }
@@ -139,7 +140,7 @@ fun WorkoutScreen(
 }
 
 @Composable
-fun RepsSection(initialReps: Int) {
+fun RepsSection(initialReps: Int, onRepsChanged: (Int) -> Unit) {
     var actualReps by remember { mutableStateOf(initialReps.toString()) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -153,7 +154,10 @@ fun RepsSection(initialReps: Int) {
         
         OutlinedTextField(
             value = actualReps,
-            onValueChange = { actualReps = it },
+            onValueChange = { 
+                actualReps = it
+                it.toIntOrNull()?.let { reps -> onRepsChanged(reps) }
+            },
             label = { Text("Reps performed") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.width(150.dp),

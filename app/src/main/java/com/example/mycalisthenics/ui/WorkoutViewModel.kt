@@ -8,6 +8,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mycalisthenics.data.local.AppDatabase
+import com.example.mycalisthenics.data.local.ExerciseRecord
+import com.example.mycalisthenics.data.local.WorkoutSession
 import com.example.mycalisthenics.data.model.ExerciseConfig
 import com.example.mycalisthenics.data.model.ExerciseUnit
 import com.example.mycalisthenics.data.model.WorkoutConfig
@@ -25,7 +27,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val db = Room.databaseBuilder(
         getApplication(),
         AppDatabase::class.java, "calisthenics-db"
-    ).build()
+    )
+    .fallbackToDestructiveMigration() // Prevent crash by clearing old data on schema change
+    .build()
 
     private val toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
 
@@ -44,6 +48,16 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _suggestedReps = MutableStateFlow<Map<String, Int>>(emptyMap())
     val suggestedReps: StateFlow<Map<String, Int>> = _suggestedReps
 
+    // Temporary storage for results during workout
+    private val _workoutResults = MutableStateFlow<Map<String, MutableList<Int>>>(emptyMap())
+    val workoutResults: StateFlow<Map<String, List<Int>>> = _workoutResults as StateFlow<Map<String, List<Int>>>
+
+    private val _showRecap = MutableStateFlow(false)
+    val showRecap: StateFlow<Boolean> = _showRecap
+
+    private val _history = MutableStateFlow<List<WorkoutSession>>(emptyList())
+    val history: StateFlow<List<WorkoutSession>> = _history
+
     // Timer state
     private val _timerSeconds = MutableStateFlow(0f)
     val timerSeconds: StateFlow<Float> = _timerSeconds
@@ -58,6 +72,13 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         loadAvailableWorkouts()
+        loadHistory()
+    }
+
+    private fun loadHistory() {
+        viewModelScope.launch {
+            _history.value = db.workoutDao().getWorkoutHistory()
+        }
     }
 
     private fun loadAvailableWorkouts() {
@@ -99,6 +120,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         _activeWorkout.value = workout
         _currentExerciseIndex.value = 0
         _currentSetIndex.value = 0
+        _showRecap.value = false
+        _workoutResults.value = workout.exercises.associate { it.id to MutableList(3) { ex -> 0 } }
         resetTimer()
         
         viewModelScope.launch {
@@ -107,12 +130,23 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                 suggestions[exercise.id] = calculateSuggestedReps(exercise)
             }
             _suggestedReps.value = suggestions
+            
+            // Initialize with suggested reps
+            val initialResults = workout.exercises.associate { ex -> 
+                ex.id to MutableList(3) { suggestions[ex.id] ?: ex.targetedReps } 
+            }
+            _workoutResults.value = initialResults
         }
     }
 
-    fun exitWorkout() {
-        _activeWorkout.value = null
-        stopTimer()
+    fun updateResult(exerciseId: String, setIndex: Int, value: Int) {
+        val current = _workoutResults.value.toMutableMap()
+        val list = current[exerciseId]?.toMutableList() ?: return
+        if (setIndex in list.indices) {
+            list[setIndex] = value
+            current[exerciseId] = list
+            _workoutResults.value = current
+        }
     }
 
     fun nextStep() {
@@ -122,19 +156,65 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val totalSets = 3 
         val totalExercises = workout.exercises.size
 
-        // Circuit rotation logic: Exercise 1 (Set 1) -> Exercise 2 (Set 1) -> ... -> Exercise 1 (Set 2)
         if (_currentExerciseIndex.value < totalExercises - 1) {
-            // Next exercise in the same set
             _currentExerciseIndex.value += 1
         } else if (_currentSetIndex.value < totalSets - 1) {
-            // Back to first exercise, but next set
             _currentExerciseIndex.value = 0
             _currentSetIndex.value += 1
         } else {
-            // All exercises and all sets finished
-            _activeWorkout.value = null
+            _showRecap.value = true
         }
         resetTimer()
+    }
+
+    fun saveWorkout() {
+        val workout = _activeWorkout.value ?: return
+        viewModelScope.launch {
+            val sessionId = db.workoutDao().insertSession(
+                WorkoutSession(
+                    date = System.currentTimeMillis(),
+                    workoutId = workout.id,
+                    workoutName = workout.name,
+                    volumeLoad = 0 // Optional calculation
+                )
+            )
+            
+            val records = _workoutResults.value.map { (exId, sets) ->
+                ExerciseRecord(
+                    sessionId = sessionId,
+                    exerciseId = exId,
+                    sets = sets,
+                    targetReps = _suggestedReps.value[exId] ?: 0,
+                    isCompleted = true
+                )
+            }
+            db.workoutDao().insertExerciseRecords(records)
+            _activeWorkout.value = null
+            _showRecap.value = false
+            loadHistory()
+        }
+    }
+
+    fun cancelWorkout() {
+        _activeWorkout.value = null
+        _showRecap.value = false
+        stopTimer()
+    }
+
+    fun exitWorkout() {
+        cancelWorkout()
+    }
+
+    fun deleteSession(session: WorkoutSession) {
+        viewModelScope.launch {
+            db.workoutDao().deleteSession(session)
+            db.workoutDao().deleteExerciseRecordsForSession(session.id)
+            loadHistory()
+        }
+    }
+
+    suspend fun getSessionDetails(sessionId: Long): List<ExerciseRecord> {
+        return db.workoutDao().getExerciseRecordsForSession(sessionId)
     }
 
     private fun resetTimer() {

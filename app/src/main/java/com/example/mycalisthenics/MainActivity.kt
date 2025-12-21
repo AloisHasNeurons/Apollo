@@ -4,12 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mycalisthenics.ui.WorkoutListScreen
-import com.example.mycalisthenics.ui.WorkoutScreen
-import com.example.mycalisthenics.ui.WorkoutViewModel
+import com.example.mycalisthenics.ui.*
 import com.example.mycalisthenics.ui.theme.MyCalisthenicsTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,21 +17,42 @@ class MainActivity : ComponentActivity() {
             MyCalisthenicsTheme {
                 val viewModel: WorkoutViewModel = viewModel()
                 val activeWorkout by viewModel.activeWorkout.collectAsState()
+                val showRecap by viewModel.showRecap.collectAsState()
+                val workoutResults by viewModel.workoutResults.collectAsState()
+                
+                var viewSessionId by remember { mutableStateOf<Long?>(null) }
 
-                if (activeWorkout == null) {
-                    WorkoutListScreen(
-                        onWorkoutSelected = { workout ->
-                            viewModel.startWorkout(workout)
-                        },
-                        viewModel = viewModel
-                    )
-                } else {
-                    WorkoutScreen(
-                        onBack = {
-                            viewModel.exitWorkout()
-                        },
-                        viewModel = viewModel
-                    )
+                when {
+                    viewSessionId != null -> {
+                        ReadOnlyRecapScreen(
+                            sessionId = viewSessionId!!,
+                            onBack = { viewSessionId = null },
+                            viewModel = viewModel
+                        )
+                    }
+                    showRecap && activeWorkout != null -> {
+                        RecapScreen(
+                            workout = activeWorkout!!,
+                            results = workoutResults,
+                            onSave = { viewModel.saveWorkout() },
+                            onCancel = { viewModel.cancelWorkout() },
+                            viewModel = viewModel
+                        )
+                    }
+                    activeWorkout != null -> {
+                        WorkoutScreen(
+                            onBack = { viewModel.exitWorkout() },
+                            onShowRecap = { /* Handled by state */ },
+                            viewModel = viewModel
+                        )
+                    }
+                    else -> {
+                        MainScreen(
+                            onStartWorkout = { /* Handled by state */ },
+                            onViewSession = { id -> viewSessionId = id },
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }

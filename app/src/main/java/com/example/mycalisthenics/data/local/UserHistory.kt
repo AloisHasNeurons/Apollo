@@ -8,6 +8,7 @@ data class WorkoutSession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val date: Long, // Timestamp
     val workoutId: String,
+    val workoutName: String,
     val volumeLoad: Int
 )
 
