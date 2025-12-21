@@ -1,7 +1,6 @@
-package com.example.mycalisthenics.data.local
+package com.alois.apollo.data.local
 
 import androidx.room.TypeConverter
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class Converters {

@@ -1,12 +1,15 @@
-package com.example.mycalisthenics
+package com.alois.apollo
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import com.example.mycalisthenics.data.model.ExerciseConfig
-import com.example.mycalisthenics.data.model.ExerciseUnit
-import com.example.mycalisthenics.data.model.WorkoutConfig
-import com.example.mycalisthenics.ui.WorkoutViewModel
-import org.junit.Assert.*
+import com.alois.apollo.data.model.ExerciseConfig
+import com.alois.apollo.data.model.ExerciseUnit
+import com.alois.apollo.data.model.WorkoutConfig
+import com.alois.apollo.ui.WorkoutViewModel
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
