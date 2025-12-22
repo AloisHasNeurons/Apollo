@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mycalisthenics"
+    namespace = "com.alois.apollo"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.mycalisthenics"
+        applicationId = "com.alois.apollo"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -65,6 +65,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

@@ -1,4 +1,4 @@
-package com.example.mycalisthenics.ui
+package com.alois.apollo.ui
 
 import android.app.Application
 import android.content.Context
@@ -7,17 +7,19 @@ import android.media.ToneGenerator
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mycalisthenics.data.local.AppDatabase
-import com.example.mycalisthenics.data.model.ExerciseConfig
-import com.example.mycalisthenics.data.model.ExerciseUnit
-import com.example.mycalisthenics.data.model.WorkoutConfig
+import androidx.room.Room
+import com.alois.apollo.data.local.AppDatabase
+import com.alois.apollo.data.local.ExerciseRecord
+import com.alois.apollo.data.local.WorkoutSession
+import com.alois.apollo.data.model.ExerciseConfig
+import com.alois.apollo.data.model.ExerciseUnit
+import com.alois.apollo.data.model.WorkoutConfig
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import androidx.room.Room
 import java.io.File
 import java.util.Locale
 
@@ -25,7 +27,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val db = Room.databaseBuilder(
         getApplication(),
         AppDatabase::class.java, "calisthenics-db"
-    ).build()
+    )
+        .fallbackToDestructiveMigration(false)
+    .build()
 
     private val toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
 
@@ -44,7 +48,15 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _suggestedReps = MutableStateFlow<Map<String, Int>>(emptyMap())
     val suggestedReps: StateFlow<Map<String, Int>> = _suggestedReps
 
-    // Timer state
+    private val _workoutResults = MutableStateFlow<Map<String, MutableList<Int>>>(emptyMap())
+    val workoutResults: StateFlow<Map<String, List<Int>>> = _workoutResults as StateFlow<Map<String, List<Int>>>
+
+    private val _showRecap = MutableStateFlow(false)
+    val showRecap: StateFlow<Boolean> = _showRecap
+
+    private val _history = MutableStateFlow<List<WorkoutSession>>(emptyList())
+    val history: StateFlow<List<WorkoutSession>> = _history
+
     private val _timerSeconds = MutableStateFlow(0f)
     val timerSeconds: StateFlow<Float> = _timerSeconds
 
@@ -58,6 +70,13 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         loadAvailableWorkouts()
+        loadHistory()
+    }
+
+    private fun loadHistory() {
+        viewModelScope.launch {
+            _history.value = db.workoutDao().getWorkoutHistory()
+        }
     }
 
     private fun loadAvailableWorkouts() {
@@ -99,6 +118,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         _activeWorkout.value = workout
         _currentExerciseIndex.value = 0
         _currentSetIndex.value = 0
+        _showRecap.value = false
+        _workoutResults.value = workout.exercises.associate { it.id to MutableList(3) { ex -> 0 } }
         resetTimer()
         
         viewModelScope.launch {
@@ -107,29 +128,90 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                 suggestions[exercise.id] = calculateSuggestedReps(exercise)
             }
             _suggestedReps.value = suggestions
+            
+            val initialResults = workout.exercises.associate { ex -> 
+                ex.id to MutableList(3) { suggestions[ex.id] ?: ex.targetedReps } 
+            }
+            _workoutResults.value = initialResults
         }
     }
 
-    fun exitWorkout() {
-        _activeWorkout.value = null
-        stopTimer()
+    fun updateResult(exerciseId: String, setIndex: Int, value: Int) {
+        val current = _workoutResults.value.toMutableMap()
+        val list = current[exerciseId]?.toMutableList() ?: return
+        if (setIndex in list.indices) {
+            list[setIndex] = value
+            current[exerciseId] = list
+            _workoutResults.value = current
+        }
     }
 
     fun nextStep() {
         val workout = _activeWorkout.value ?: return
         stopTimer()
         
-        val totalSets = 3 // Standard for this app as per requirements
-        
-        if (_currentSetIndex.value < totalSets - 1) {
-            _currentSetIndex.value += 1
-        } else if (_currentExerciseIndex.value < workout.exercises.size - 1) {
+        val totalSets = 3 
+        val totalExercises = workout.exercises.size
+
+        if (_currentExerciseIndex.value < totalExercises - 1) {
             _currentExerciseIndex.value += 1
-            _currentSetIndex.value = 0
+        } else if (_currentSetIndex.value < totalSets - 1) {
+            _currentExerciseIndex.value = 0
+            _currentSetIndex.value += 1
         } else {
-            _activeWorkout.value = null
+            _showRecap.value = true
         }
         resetTimer()
+    }
+
+    fun saveWorkout() {
+        val workout = _activeWorkout.value ?: return
+        viewModelScope.launch {
+            val sessionId = db.workoutDao().insertSession(
+                WorkoutSession(
+                    date = System.currentTimeMillis(),
+                    workoutId = workout.id,
+                    workoutName = workout.name,
+                    volumeLoad = 0 
+                )
+            )
+            
+            val records = _workoutResults.value.map { (exId, sets) ->
+                ExerciseRecord(
+                    sessionId = sessionId,
+                    exerciseId = exId,
+                    sets = sets,
+                    targetReps = _suggestedReps.value[exId] ?: 0,
+                    isCompleted = true
+                )
+            }
+            db.workoutDao().insertExerciseRecords(records)
+            _activeWorkout.value = null
+            _showRecap.value = false
+            loadHistory()
+        }
+    }
+
+    fun cancelWorkout() {
+        _activeWorkout.value = null
+        _showRecap.value = false
+        stopTimer()
+    }
+
+    fun exitWorkout() {
+        cancelWorkout()
+    }
+
+    fun deleteSession(session: WorkoutSession) {
+        viewModelScope.launch {
+            db.workoutDao().deleteSession(session)
+            db.workoutDao().deleteExerciseRecordsForSession(session.id)
+            loadHistory()
+        }
+    }
+
+    suspend fun getSessionDetails(sessionId: Long): List<ExerciseRecord> {
+        return db.workoutDao().getExerciseRecordsForSession(sessionId)
     }
 
     private fun resetTimer() {
@@ -160,7 +242,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             _isDelaying.value = false
             _isTimerRunning.value = true
             
-            val startTime = _timerSeconds.value
             while (_timerSeconds.value > 0 && _isTimerRunning.value) {
                 delay(100)
                 _timerSeconds.value -= 0.1f

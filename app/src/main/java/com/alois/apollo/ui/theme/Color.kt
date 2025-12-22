@@ -1,4 +1,4 @@
-package com.example.mycalisthenics.ui.theme
+package com.alois.apollo.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

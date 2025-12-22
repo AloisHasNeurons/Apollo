@@ -1,9 +1,7 @@
-package com.example.mycalisthenics.data.local
+package com.alois.apollo.data.local
 
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 
@@ -20,10 +18,13 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workout_history ORDER BY date DESC")
     suspend fun getWorkoutHistory(): List<WorkoutSession>
-}
 
-@Database(entities = [WorkoutSession::class, ExerciseRecord::class], version = 1)
-@TypeConverters(Converters::class)
-abstract class AppDatabase : RoomDatabase() {
-    abstract fun workoutDao(): WorkoutDao
+    @Query("SELECT * FROM exercise_history WHERE sessionId = :sessionId")
+    suspend fun getExerciseRecordsForSession(sessionId: Long): List<ExerciseRecord>
+
+    @Delete
+    suspend fun deleteSession(session: WorkoutSession)
+
+    @Query("DELETE FROM exercise_history WHERE sessionId = :sessionId")
+    suspend fun deleteExerciseRecordsForSession(sessionId: Long)
 }
