@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mycalisthenics"
+    namespace = "com.alois.apollo"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.mycalisthenics"
+        applicationId = "com.alois.apollo"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.example.mycalisthenics.ui
+package com.alois.apollo.ui
 
 import android.app.Application
 import android.content.Context
@@ -7,19 +7,19 @@ import android.media.ToneGenerator
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mycalisthenics.data.local.AppDatabase
-import com.example.mycalisthenics.data.local.ExerciseRecord
-import com.example.mycalisthenics.data.local.WorkoutSession
-import com.example.mycalisthenics.data.model.ExerciseConfig
-import com.example.mycalisthenics.data.model.ExerciseUnit
-import com.example.mycalisthenics.data.model.WorkoutConfig
+import androidx.room.Room
+import com.alois.apollo.data.local.AppDatabase
+import com.alois.apollo.data.local.ExerciseRecord
+import com.alois.apollo.data.local.WorkoutSession
+import com.alois.apollo.data.model.ExerciseConfig
+import com.alois.apollo.data.model.ExerciseUnit
+import com.alois.apollo.data.model.WorkoutConfig
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import androidx.room.Room
 import java.io.File
 import java.util.Locale
 
@@ -28,7 +28,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         getApplication(),
         AppDatabase::class.java, "calisthenics-db"
     )
-    .fallbackToDestructiveMigration() // Prevent crash by clearing old data on schema change
+        .fallbackToDestructiveMigration(false)
     .build()
 
     private val toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
@@ -48,7 +48,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _suggestedReps = MutableStateFlow<Map<String, Int>>(emptyMap())
     val suggestedReps: StateFlow<Map<String, Int>> = _suggestedReps
 
-    // Temporary storage for results during workout
     private val _workoutResults = MutableStateFlow<Map<String, MutableList<Int>>>(emptyMap())
     val workoutResults: StateFlow<Map<String, List<Int>>> = _workoutResults as StateFlow<Map<String, List<Int>>>
 
@@ -58,7 +57,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val _history = MutableStateFlow<List<WorkoutSession>>(emptyList())
     val history: StateFlow<List<WorkoutSession>> = _history
 
-    // Timer state
     private val _timerSeconds = MutableStateFlow(0f)
     val timerSeconds: StateFlow<Float> = _timerSeconds
 
@@ -131,7 +129,6 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
             }
             _suggestedReps.value = suggestions
             
-            // Initialize with suggested reps
             val initialResults = workout.exercises.associate { ex -> 
                 ex.id to MutableList(3) { suggestions[ex.id] ?: ex.targetedReps } 
             }
@@ -175,7 +172,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                     date = System.currentTimeMillis(),
                     workoutId = workout.id,
                     workoutName = workout.name,
-                    volumeLoad = 0 // Optional calculation
+                    volumeLoad = 0 
                 )
             )
             

@@ -1,4 +1,4 @@
-package com.example.mycalisthenics.data.local
+package com.alois.apollo.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase

@@ -1,4 +1,4 @@
-package com.example.mycalisthenics.data.model
+package com.alois.apollo.data.model
 
 import kotlinx.serialization.Serializable
 
@@ -29,5 +29,5 @@ data class ExerciseConfig(
 
 @Serializable
 enum class ExerciseUnit {
-    REPS, TIME, AMRAP
+    REPS, TIME
 }
