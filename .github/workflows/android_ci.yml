@@ -25,19 +25,9 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 1. Static Analysis (Linting)
-    - name: Run Android Lint
-      run: ./gradlew lintDebug
+    - name: Build, Lint, and Test
+      run: ./gradlew lintDebug testDebugUnitTest assembleDebug --parallel --build-cache
 
-    # 2. Run Unit Tests
-    - name: Run Unit Tests
-      run: ./gradlew testDebugUnitTest
-
-    # 3. Build the APK
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
-
-    # 4. Upload Artifact
     - name: Upload APK
       uses: actions/upload-artifact@v6
       with:
