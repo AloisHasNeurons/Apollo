@@ -28,7 +28,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         getApplication(),
         AppDatabase::class.java, "calisthenics-db"
     )
-        .fallbackToDestructiveMigration(false)
+        .fallbackToDestructiveMigration()
     .build()
 
     private val toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
@@ -167,12 +167,15 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     fun saveWorkout() {
         val workout = _activeWorkout.value ?: return
         viewModelScope.launch {
+            val totalReps = _workoutResults.value.values.sumOf { it.sum() }
+            val bodyweightKg = 68 // Baseline bodyweight for volume calculation
+            val totalVolume = totalReps * bodyweightKg
             val sessionId = db.workoutDao().insertSession(
                 WorkoutSession(
                     date = System.currentTimeMillis(),
                     workoutId = workout.id,
                     workoutName = workout.name,
-                    volumeLoad = 0 
+                    volumeLoad = totalVolume
                 )
             )
             
@@ -271,6 +274,83 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         if (lastRecords.size < 2) return exercise.targetedReps
         val hitTargetInAllSets = lastRecords.all { record -> record.sets.all { it >= record.targetReps } }
         return if (hitTargetInAllSets) exercise.targetedReps + 1 else exercise.targetedReps
+    }
+
+    fun seedTestData() {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val dayMillis = 24 * 60 * 60 * 1000L
+
+            // Create sessions for the last 14 days with varying frequency
+            // Volume = total reps × 68kg bodyweight (e.g., 45 reps × 68 = 3060kg)
+            val testSessions = listOf(
+                WorkoutSession(
+                    date = now - (dayMillis * 1),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3400
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 3),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3264
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 4),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3128
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 7),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2992
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 8),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2856
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 11),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2720
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 14),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2584
+                )
+            )
+
+            testSessions.forEach { session ->
+                val sessionId = db.workoutDao().insertSession(session)
+                // Add some dummy exercise records for each session
+                val records = listOf(
+                    ExerciseRecord(
+                        sessionId = sessionId,
+                        exerciseId = "pullup_01",
+                        sets = listOf(5, 5, 5),
+                        targetReps = 5,
+                        isCompleted = true
+                    ),
+                    ExerciseRecord(
+                        sessionId = sessionId,
+                        exerciseId = "pike_pushup_01",
+                        sets = listOf(10, 10, 10),
+                        targetReps = 10,
+                        isCompleted = true
+                    )
+                )
+                db.workoutDao().insertExerciseRecords(records)
+            }
+            loadHistory()
+        }
     }
 
     fun isFrench(): Boolean = Locale.getDefault().language == "fr"

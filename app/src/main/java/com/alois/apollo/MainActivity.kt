@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.alois.apollo.ui.HistoryScreen
 import com.alois.apollo.ui.MainScreen
 import com.alois.apollo.ui.ReadOnlyRecapScreen
 import com.alois.apollo.ui.RecapScreen
@@ -29,12 +30,21 @@ class MainActivity : ComponentActivity() {
                 val workoutResults by viewModel.workoutResults.collectAsState()
                 
                 var viewSessionId by remember { mutableStateOf<Long?>(null) }
+                var showHistory by remember { mutableStateOf(false) }
 
                 when {
                     viewSessionId != null -> {
                         ReadOnlyRecapScreen(
                             sessionId = viewSessionId!!,
                             onBack = { viewSessionId = null },
+                            viewModel = viewModel
+                        )
+                    }
+
+                    showHistory -> {
+                        HistoryScreen(
+                            onBack = { showHistory = false },
+                            onViewSession = { id -> viewSessionId = id },
                             viewModel = viewModel
                         )
                     }
@@ -57,7 +67,7 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         MainScreen(
                             onStartWorkout = { /* Handled by state */ },
-                            onViewSession = { id -> viewSessionId = id },
+                            onOpenHistory = { showHistory = true },
                             viewModel = viewModel
                         )
                     }
