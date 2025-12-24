@@ -53,9 +53,7 @@ jobs:
     - name: Build Android App
       run: |
         chmod +x gradlew
-        # assembleDebug is fine, but you can also use 'help' or 'classes' 
-        # to save time if you just want to compile for analysis
-        ./gradlew classes 
+        ./gradlew compileDebugKotlin 
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
