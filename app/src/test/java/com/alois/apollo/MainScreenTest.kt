@@ -12,7 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(sdk = [33], manifest = Config.NONE)
 class MainScreenTest {
 
     @get:Rule
@@ -22,7 +22,7 @@ class MainScreenTest {
     fun `MainScreen displays the add workout floating action button`() {
         composeTestRule.setContent {
             ApolloTheme {
-                MainScreen(onStartWorkout = {}, onViewSession = {})
+                MainScreen(onStartWorkout = {}, onOpenHistory = {})
             }
         }
 
