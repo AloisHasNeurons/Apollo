@@ -1,0 +1,42 @@
+{
+  "id": "pull_01",
+  "name": "Pull",
+  "nameFr": "Pull",
+  "focus": "Back & Biceps",
+  "focusFr": "Dos & Biceps",
+  "exercises": [
+    {
+      "id": "pullup_01",
+      "nameEn": "Pull-ups",
+      "nameFr": "Tractions",
+      "descriptionEn": "Chin over bar. Full extension.",
+      "descriptionFr": "Menton au-dessus de la barre. Extension complète.",
+      "repRange": "5-8",
+      "targetedReps": 6,
+      "unit": "REPS",
+      "restSeconds": 120
+    },
+    {
+      "id": "dead_hang_01",
+      "nameEn": "Dead Hang",
+      "nameFr": "Suspension Passive",
+      "descriptionEn": "Grip strength. Relax shoulders.",
+      "descriptionFr": "Force de préhension. Relâchez les épaules.",
+      "repRange": "30-60s",
+      "targetedReps": 30,
+      "unit": "TIME",
+      "restSeconds": 60
+    },
+    {
+      "id": "rows_01",
+      "nameEn": "Australian Pull-ups",
+      "nameFr": "Tractions Australiennes",
+      "descriptionEn": "Horizontal pull to chest.",
+      "descriptionFr": "Tirage horizontal poitrine.",
+      "repRange": "10-15",
+      "targetedReps": 12,
+      "unit": "REPS",
+      "restSeconds": 90
+    }
+  ]
+}

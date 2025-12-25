@@ -57,11 +57,21 @@ fun RecapScreen(
 ) {
     // Handle system back gesture
     androidx.activity.compose.BackHandler { onCancel() }
-    
+
+    // Observe isFrench state for immediate updates if ever reachable, or just consistency
+    val isFrench by viewModel.isFrench.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isReadOnly) "Session Summary" else "Workout Recap") },
+                title = {
+                    val title = if (isReadOnly) {
+                        if (isFrench) "Résumé de la séance" else "Session Summary"
+                    } else {
+                        if (isFrench) "Récapitulatif" else "Workout Recap"
+                    }
+                    Text(title)
+                },
                 actions = {
                     if (isReadOnly) {
                         IconButton(onClick = onCancel) {
@@ -83,7 +93,7 @@ fun RecapScreen(
                         onClick = onCancel,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Text(if (isFrench) "Annuler" else "Cancel")
                     }
                     Button(
                         onClick = onSave,
@@ -91,7 +101,7 @@ fun RecapScreen(
                     ) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Save")
+                        Text(if (isFrench) "Enregistrer" else "Save")
                     }
                 }
             }

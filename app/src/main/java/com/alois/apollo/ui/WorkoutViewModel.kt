@@ -482,5 +482,35 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun isFrench(): Boolean = Locale.getDefault().language == "fr"
+    private val _isFrench = MutableStateFlow(false)
+    val isFrench: StateFlow<Boolean> = _isFrench
+
+    init {
+        loadLanguagePreference()
+        loadAvailableWorkouts()
+        loadHistory()
+        // Auto-seed test data for development (clears and repopulates)
+        seedTestData()
+    }
+
+    private fun loadLanguagePreference() {
+        val sharedPref =
+            getApplication<Application>().getSharedPreferences("apollo_prefs", Context.MODE_PRIVATE)
+        // Default to system locale if no preference is saved
+        val defaultIsFrench = Locale.getDefault().language == "fr"
+        _isFrench.value = sharedPref.getBoolean("is_french", defaultIsFrench)
+    }
+
+    fun setLanguage(isFrench: Boolean) {
+        _isFrench.value = isFrench
+        val sharedPref =
+            getApplication<Application>().getSharedPreferences("apollo_prefs", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putBoolean("is_french", isFrench)
+            apply()
+        }
+    }
+
+    // Helper for non-composable contexts, though ideally we observe the flow
+    fun isFrench(): Boolean = _isFrench.value
 }
