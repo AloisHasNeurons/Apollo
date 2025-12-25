@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        requestHighRefreshRate()
         setContent {
             ApolloTheme {
                 val viewModel: WorkoutViewModel = viewModel()
@@ -73,6 +74,26 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun requestHighRefreshRate() {
+        val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            display
+        } else {
+            windowManager.defaultDisplay
+        } ?: return
+
+        val supportedModes = display.supportedModes
+
+        // Find the mode with highest refresh rate
+        val highestRefreshMode = supportedModes.maxByOrNull { it.refreshRate }
+
+        highestRefreshMode?.let { mode ->
+            val params = window.attributes
+            params.preferredDisplayModeId = mode.modeId
+            window.attributes = params
         }
     }
 }

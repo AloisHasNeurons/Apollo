@@ -47,6 +47,9 @@ fun HistoryScreen(
 ) {
     val history by viewModel.history.collectAsState()
 
+    // Handle system back gesture
+    androidx.activity.compose.BackHandler { onBack() }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -139,7 +142,11 @@ fun SwipeToDeleteSession(
         ) {
             ListItem(
                 headlineContent = { Text("${session.workoutName} - $dateStr") },
-                supportingContent = { Text("Volume: ${session.volumeLoad}") }
+                supportingContent = {
+                    val normalizedVolume =
+                        if (session.volumeLoad < 500) session.volumeLoad * 68 else session.volumeLoad
+                    Text("Volume: ${normalizedVolume} kg")
+                }
             )
         }
     }
