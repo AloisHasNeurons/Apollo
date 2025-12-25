@@ -11,6 +11,11 @@ workouts as JSON files.
 
 Built with **Jetpack Compose** and **Clean Architecture**, it offers a buttery-smooth, offline-first
 experience.
+<div align="center">
+
+![Apollo CI/CD](https://github.com/AloisHasNeurons/Apollo/actions/workflows/android_ci.yml/badge.svg)
+
+</div>
 
 ![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
