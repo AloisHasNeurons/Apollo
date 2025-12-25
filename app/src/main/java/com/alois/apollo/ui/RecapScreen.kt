@@ -55,6 +55,9 @@ fun RecapScreen(
     onCancel: () -> Unit = {},
     viewModel: WorkoutViewModel = viewModel()
 ) {
+    // Handle system back gesture
+    androidx.activity.compose.BackHandler { onCancel() }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -163,6 +166,9 @@ fun ReadOnlyRecapScreen(
     onBack: () -> Unit,
     viewModel: WorkoutViewModel = viewModel()
 ) {
+    // Handle system back gesture
+    androidx.activity.compose.BackHandler { onBack() }
+    
     var records by remember { mutableStateOf<List<ExerciseRecord>>(emptyList()) }
     val workouts by viewModel.availableWorkouts.collectAsState()
     val history by viewModel.history.collectAsState()

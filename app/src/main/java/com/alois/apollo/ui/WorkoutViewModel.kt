@@ -31,7 +31,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         .fallbackToDestructiveMigration()
     .build()
 
-    private val toneGenerator = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+    private val toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
 
     private val _availableWorkouts = MutableStateFlow<List<WorkoutConfig>>(emptyList())
     val availableWorkouts: StateFlow<List<WorkoutConfig>> = _availableWorkouts
@@ -71,6 +71,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     init {
         loadAvailableWorkouts()
         loadHistory()
+        // Auto-seed test data for development (clears and repopulates)
+        seedTestData()
     }
 
     private fun loadHistory() {
@@ -167,7 +169,17 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     fun saveWorkout() {
         val workout = _activeWorkout.value ?: return
         viewModelScope.launch {
-            val totalReps = _workoutResults.value.values.sumOf { it.sum() }
+            // Only count reps from rep-based exercises (exclude timed exercises)
+            val repBasedExerciseIds = workout.exercises
+                .filter { it.unit == ExerciseUnit.REPS }
+                .map { it.id }
+                .toSet()
+
+            val totalReps = _workoutResults.value
+                .filterKeys { it in repBasedExerciseIds }
+                .values
+                .sumOf { it.sum() }
+            
             val bodyweightKg = 68 // Baseline bodyweight for volume calculation
             val totalVolume = totalReps * bodyweightKg
             val sessionId = db.workoutDao().insertSession(
@@ -278,71 +290,169 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     fun seedTestData() {
         viewModelScope.launch {
+            // Clear existing data first
+            db.workoutDao().clearAllExerciseRecords()
+            db.workoutDao().clearAllSessions()
+            
             val now = System.currentTimeMillis()
             val dayMillis = 24 * 60 * 60 * 1000L
 
-            // Create sessions for the last 14 days with varying frequency
-            // Volume = total reps × 68kg bodyweight (e.g., 45 reps × 68 = 3060kg)
+            // Realistic workout history over ~2 months
+            // - 2-3 workouts per week (realistic schedule)
+            // - Natural variation in performance (±10-15%)
+            // - Gradual progression over time
+            // - Some "off" days where performance dipped
             val testSessions = listOf(
+                // Recent week (Christmas week - lighter)
                 WorkoutSession(
-                    date = now - (dayMillis * 1),
+                    date = now - (dayMillis * 2),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 3400
+                    volumeLoad = 3672  // 54 reps × 68kg - good session
                 ),
+
+                // Week 1 (current)
                 WorkoutSession(
-                    date = now - (dayMillis * 3),
+                    date = now - (dayMillis * 5),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 3264
-                ),
-                WorkoutSession(
-                    date = now - (dayMillis * 4),
-                    workoutId = "greek_statue_a",
-                    workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 3128
+                    volumeLoad = 3468  // 51 reps × 68kg
                 ),
                 WorkoutSession(
                     date = now - (dayMillis * 7),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 2992
+                    volumeLoad = 3536  // 52 reps × 68kg
                 ),
+
+                // Week 2
                 WorkoutSession(
-                    date = now - (dayMillis * 8),
+                    date = now - (dayMillis * 10),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 2856
+                    volumeLoad = 3400  // 50 reps × 68kg
                 ),
                 WorkoutSession(
-                    date = now - (dayMillis * 11),
+                    date = now - (dayMillis * 12),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 2720
+                    volumeLoad = 3128  // 46 reps × 68kg - tired day
                 ),
                 WorkoutSession(
                     date = now - (dayMillis * 14),
                     workoutId = "greek_statue_a",
                     workoutName = "Greek Statue Protocol - A",
-                    volumeLoad = 2584
+                    volumeLoad = 3332  // 49 reps × 68kg
+                ),
+
+                // Week 3
+                WorkoutSession(
+                    date = now - (dayMillis * 17),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3264  // 48 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 19),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3196  // 47 reps × 68kg
+                ),
+
+                // Week 4
+                WorkoutSession(
+                    date = now - (dayMillis * 22),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3060  // 45 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 24),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2992  // 44 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 26),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 3128  // 46 reps × 68kg - good energy
+                ),
+
+                // Week 5-6 (earlier - building up)
+                WorkoutSession(
+                    date = now - (dayMillis * 30),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2856  // 42 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 33),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2788  // 41 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 36),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2924  // 43 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 40),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2720  // 40 reps × 68kg
+                ),
+
+                // Week 7-8 (starting phase)
+                WorkoutSession(
+                    date = now - (dayMillis * 45),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2584  // 38 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 49),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2448  // 36 reps × 68kg
+                ),
+                WorkoutSession(
+                    date = now - (dayMillis * 52),
+                    workoutId = "greek_statue_a",
+                    workoutName = "Greek Statue Protocol - A",
+                    volumeLoad = 2380  // 35 reps × 68kg - first tracked
                 )
             )
 
             testSessions.forEach { session ->
                 val sessionId = db.workoutDao().insertSession(session)
-                // Add some dummy exercise records for each session
+                // Vary the reps per exercise based on total volume
+                val totalReps = session.volumeLoad / 68
+                val pullupReps = totalReps * 40 / 100  // ~40% from pullups
+                val pushupReps = totalReps - pullupReps  // ~60% from pushups
+                
                 val records = listOf(
                     ExerciseRecord(
                         sessionId = sessionId,
                         exerciseId = "pullup_01",
-                        sets = listOf(5, 5, 5),
+                        sets = listOf(
+                            pullupReps / 3,
+                            pullupReps / 3,
+                            pullupReps - 2 * (pullupReps / 3)
+                        ),
                         targetReps = 5,
                         isCompleted = true
                     ),
                     ExerciseRecord(
                         sessionId = sessionId,
                         exerciseId = "pike_pushup_01",
-                        sets = listOf(10, 10, 10),
+                        sets = listOf(
+                            pushupReps / 3,
+                            pushupReps / 3,
+                            pushupReps - 2 * (pushupReps / 3)
+                        ),
                         targetReps = 10,
                         isCompleted = true
                     )

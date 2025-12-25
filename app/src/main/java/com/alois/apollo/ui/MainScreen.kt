@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -145,23 +146,42 @@ fun MainScreen(
                     SectionHeader("Available Workouts", Icons.Default.PlayArrow)
                 }
 
-                items(workouts) { workout ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                viewModel.startWorkout(workout)
-                                onStartWorkout()
-                            },
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                itemsIndexed(workouts) { index, workout ->
+                    var visible by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        kotlinx.coroutines.delay(index * 50L) // Stagger delay
+                        visible = true
+                    }
+
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = visible,
+                        enter = androidx.compose.animation.fadeIn(
+                            animationSpec = androidx.compose.animation.core.tween(300)
+                        ) + androidx.compose.animation.slideInVertically(
+                            initialOffsetY = { it / 2 },
+                            animationSpec = androidx.compose.animation.core.tween(300)
+                        )
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = workout.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                text = workout.focus,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.startWorkout(workout)
+                                    onStartWorkout()
+                                },
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = workout.name,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = workout.focus,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
                         }
                     }
                 }
@@ -267,11 +287,6 @@ fun WorkoutHeatmap(history: List<WorkoutSession>) {
                 "Workout Frequency",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
-            )
-            Text(
-                "Long press for details",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(12.dp))
 
@@ -406,8 +421,13 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
         return
     }
 
-    val maxVolume = sortedHistory.maxOf { it.volumeLoad }.toFloat()
-    val minVolume = sortedHistory.minOf { it.volumeLoad }.toFloat()
+    // Normalize old volumeLoad values (if < 500, assume it's raw reps and multiply by 68kg)
+    fun normalizeVolume(rawVolume: Int): Int {
+        return if (rawVolume < 500) rawVolume * 68 else rawVolume
+    }
+
+    val maxVolume = sortedHistory.maxOf { normalizeVolume(it.volumeLoad) }.toFloat()
+    val minVolume = sortedHistory.minOf { normalizeVolume(it.volumeLoad) }.toFloat()
     val range = (maxVolume - minVolume).coerceAtLeast(1f)
 
     var selectedPointIndex by remember { mutableStateOf<Int?>(null) }
@@ -435,11 +455,6 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
                 "Volume Load Progression",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
-            )
-            Text(
-                "Long press on points to see details",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(16.dp))
 
@@ -486,14 +501,10 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
                                         onLongPress = { offset ->
                                             // Find closest point
                                             val closest = points.withIndex().minByOrNull {
-                                                abs(it.value.x - offset.x) + abs(it.value.y - offset.y)
+                                                abs(it.value.x - offset.x)
                                             }
                                             if (closest != null) {
-                                                val distance =
-                                                    abs(closest.value.x - offset.x) + abs(closest.value.y - offset.y)
-                                                if (distance < 100f) {
-                                                    selectedPointIndex = closest.index
-                                                }
+                                                selectedPointIndex = closest.index
                                             }
                                         },
                                         onPress = {
@@ -522,7 +533,8 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
                             // Calculate and store points
                             points = sortedHistory.mapIndexed { index, session ->
                                 val x = index * spacing
-                                val y = height - ((session.volumeLoad - minVolume) / range * height)
+                                val normalizedVolume = normalizeVolume(session.volumeLoad)
+                                val y = height - ((normalizedVolume - minVolume) / range * height)
                                 Offset(x, y)
                             }
 
@@ -580,7 +592,7 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "${session.volumeLoad} kg",
+                                            text = "${normalizeVolume(session.volumeLoad)} kg",
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.inverseOnSurface
                                         )

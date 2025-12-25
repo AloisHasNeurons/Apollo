@@ -27,4 +27,10 @@ interface WorkoutDao {
 
     @Query("DELETE FROM exercise_history WHERE sessionId = :sessionId")
     suspend fun deleteExerciseRecordsForSession(sessionId: Long)
+
+    @Query("DELETE FROM workout_history")
+    suspend fun clearAllSessions()
+
+    @Query("DELETE FROM exercise_history")
+    suspend fun clearAllExerciseRecords()
 }
