@@ -100,7 +100,7 @@ This project uses **GitHub Actions** to ensure code quality and automate release
 
 To install the app on your Android device:
 
-1. Go to the [Releases Page](https://github.com/yourusername/MyCalisthenics/releases).
+1. Go to the [Releases Page](https://github.com/AloisHasNeurons/Apollo/releases).
 2. Download the latest apk.
 3. Install it on your phone (you may need to enable "Install from unknown sources").
 
