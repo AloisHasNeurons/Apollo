@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
@@ -82,6 +83,7 @@ fun MainScreen(
 ) {
     val workouts by viewModel.availableWorkouts.collectAsState()
     val history by viewModel.history.collectAsState()
+    val isFrench by viewModel.isFrench.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -92,6 +94,57 @@ fun MainScreen(
         uri?.let { viewModel.importWorkout(context, it) }
     }
 
+    var showSettingsDialog by remember { mutableStateOf(false) }
+
+    if (showSettingsDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text(if (isFrench) "Paramètres" else "Settings") },
+            text = {
+                Column {
+                    Text(
+                        text = if (isFrench) "Langue / Language" else "Language / Langue",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setLanguage(false) } // English
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = !isFrench,
+                            onClick = { viewModel.setLanguage(false) }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("English")
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.setLanguage(true) } // French
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = isFrench,
+                            onClick = { viewModel.setLanguage(true) }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Français")
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showSettingsDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -99,7 +152,7 @@ fun MainScreen(
                 Spacer(Modifier.height(12.dp))
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.History, contentDescription = null) },
-                    label = { Text("History") },
+                    label = { Text(if (isFrench) "Historique" else "History") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -108,11 +161,20 @@ fun MainScreen(
                 )
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.FileUpload, contentDescription = null) },
-                    label = { Text("Import Workout") },
+                    label = { Text(if (isFrench) "Importer un entraînement" else "Import Workout") },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
                         launcher.launch("application/json")
+                    }
+                )
+                NavigationDrawerItem(
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    label = { Text(if (isFrench) "Paramètres" else "Settings") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        showSettingsDialog = true
                     }
                 )
             }
@@ -143,7 +205,10 @@ fun MainScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 item {
-                    SectionHeader("Available Workouts", Icons.Default.PlayArrow)
+                    SectionHeader(
+                        if (isFrench) "Entraînements disponibles" else "Available Workouts",
+                        Icons.Default.PlayArrow
+                    )
                 }
 
                 itemsIndexed(workouts) { index, workout ->
@@ -173,11 +238,11 @@ fun MainScreen(
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = workout.name,
+                                    text = if (isFrench && workout.nameFr != null) workout.nameFr!! else workout.name,
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = workout.focus,
+                                    text = if (isFrench && workout.focusFr != null) workout.focusFr!! else workout.focus,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
@@ -188,18 +253,18 @@ fun MainScreen(
 
                 item {
                     Text(
-                        text = "Statistics",
+                        text = if (isFrench) "Statistiques" else "Statistics",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
                 item {
-                    WorkoutHeatmap(history)
+                    WorkoutHeatmap(history, isFrench)
                 }
 
                 item {
-                    VolumeLoadGraph(history)
+                    VolumeLoadGraph(history, isFrench)
                 }
             }
         }
@@ -207,7 +272,7 @@ fun MainScreen(
 }
 
 @Composable
-fun WorkoutHeatmap(history: List<WorkoutSession>) {
+fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
     val today = Calendar.getInstance()
     val cellSize = 14.dp
     val cellSpacing = 2.dp
@@ -284,7 +349,7 @@ fun WorkoutHeatmap(history: List<WorkoutSession>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Workout Frequency",
+                if (isFrench) "Fréquence d'entraînement" else "Workout Frequency",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -381,7 +446,7 @@ fun WorkoutHeatmap(history: List<WorkoutSession>) {
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (count == 0) "No workout" else "$count workout${if (count > 1) "s" else ""}",
+                                text = if (count == 0) (if (isFrench) "Pas d'entraînement" else "No workout") else "$count " + (if (isFrench) "entraînement" else "workout") + if (count > 1) "s" else "",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.inverseOnSurface
                             )
@@ -394,7 +459,7 @@ fun WorkoutHeatmap(history: List<WorkoutSession>) {
 }
 
 @Composable
-fun VolumeLoadGraph(history: List<WorkoutSession>) {
+fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
     val sortedHistory = history.sortedBy { it.date }
     if (sortedHistory.size < 2) {
         Card(
@@ -412,7 +477,7 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Complete more workouts to see your progression",
+                    if (isFrench) "Terminez plus d'entraînements pour voir votre progression" else "Complete more workouts to see your progression",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -452,7 +517,7 @@ fun VolumeLoadGraph(history: List<WorkoutSession>) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                "Volume Load Progression",
+                if (isFrench) "Progression de la charge" else "Volume Load Progression",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

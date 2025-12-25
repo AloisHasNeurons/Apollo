@@ -61,7 +61,7 @@ fun WorkoutScreen(
     val suggestedReps by viewModel.suggestedReps.collectAsState()
     val workoutResults by viewModel.workoutResults.collectAsState()
     val showRecap by viewModel.showRecap.collectAsState()
-    val isFrench = viewModel.isFrench()
+    val isFrench by viewModel.isFrench.collectAsState()
 
     var showExitDialog by remember { mutableStateOf(false) }
 
