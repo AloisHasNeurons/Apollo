@@ -1,5 +1,7 @@
 package com.alois.apollo
 
+import android.content.Context
+import android.hardware.display.DisplayManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -86,7 +88,8 @@ class MainActivity : ComponentActivity() {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                 display
             } else {
-                windowManager.defaultDisplay
+                val displayManager = getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+                displayManager?.getDisplay(android.view.Display.DEFAULT_DISPLAY)
             }
                 ?: return
 
