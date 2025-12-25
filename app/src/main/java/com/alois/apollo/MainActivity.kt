@@ -18,6 +18,10 @@ import com.alois.apollo.ui.WorkoutScreen
 import com.alois.apollo.ui.WorkoutViewModel
 import com.alois.apollo.ui.theme.ApolloTheme
 
+/**
+ * Entry point of the application. Sets up the high refresh rate and manages the top-level
+ * navigation state between screens.
+ */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +33,7 @@ class MainActivity : ComponentActivity() {
                 val activeWorkout by viewModel.activeWorkout.collectAsState()
                 val showRecap by viewModel.showRecap.collectAsState()
                 val workoutResults by viewModel.workoutResults.collectAsState()
-                
+
                 var viewSessionId by remember { mutableStateOf<Long?>(null) }
                 var showHistory by remember { mutableStateOf(false) }
 
@@ -41,7 +45,6 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel
                         )
                     }
-
                     showHistory -> {
                         HistoryScreen(
                             onBack = { showHistory = false },
@@ -79,11 +82,13 @@ class MainActivity : ComponentActivity() {
 
     @Suppress("DEPRECATION")
     private fun requestHighRefreshRate() {
-        val display = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            display
-        } else {
-            windowManager.defaultDisplay
-        } ?: return
+        val display =
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                display
+            } else {
+                windowManager.defaultDisplay
+            }
+                ?: return
 
         val supportedModes = display.supportedModes
 

@@ -39,6 +39,10 @@ import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Screen showing the user's workout history. Allows viewing details of past sessions and deleting
+ * them.
+ */
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
@@ -56,7 +60,10 @@ fun HistoryScreen(
                 title = { Text("Workout History") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 }
             )
@@ -68,9 +75,7 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
-            ) {
-                Text("No workouts yet!", style = MaterialTheme.typography.bodyLarge)
-            }
+            ) { Text("No workouts yet!", style = MaterialTheme.typography.bodyLarge) }
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -92,12 +97,9 @@ fun HistoryScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+/** A list item that supports swipe-to-delete functionality. */
 @Composable
-fun SwipeToDeleteSession(
-    session: WorkoutSession,
-    onDelete: () -> Unit,
-    onClick: () -> Unit
-) {
+fun SwipeToDeleteSession(session: WorkoutSession, onDelete: () -> Unit, onClick: () -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState()
 
     SwipeToDismissBox(
@@ -106,14 +108,15 @@ fun SwipeToDeleteSession(
         backgroundContent = {
             if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 4.dp)
-                        .background(
-                            MaterialTheme.colorScheme.errorContainer,
-                            MaterialTheme.shapes.medium
-                        )
-                        .padding(horizontal = 16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.errorContainer,
+                                MaterialTheme.shapes.medium
+                            )
+                            .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart) {
@@ -129,22 +132,27 @@ fun SwipeToDeleteSession(
             }
         }
     ) {
-        val dateStr = remember(session.date) {
-            SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(session.date))
-        }
+        val dateStr =
+            remember(session.date) {
+                SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(session.date))
+            }
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp)
                 .clickable { onClick() },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
         ) {
             ListItem(
                 headlineContent = { Text("${session.workoutName} - $dateStr") },
                 supportingContent = {
                     val normalizedVolume =
-                        if (session.volumeLoad < 500) session.volumeLoad * 68 else session.volumeLoad
+                        if (session.volumeLoad < 500) session.volumeLoad * 68
+                        else session.volumeLoad
                     Text("Volume: ${normalizedVolume} kg")
                 }
             )

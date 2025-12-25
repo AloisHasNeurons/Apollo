@@ -26,6 +26,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.alois.apollo.data.model.WorkoutConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Screen displaying the list of available workouts. Supports importing new workouts via a file
+ * picker.
+ *
+ * @param onWorkoutSelected Callback when a workout is clicked.
+ */
 @Composable
 fun WorkoutListScreen(
     onWorkoutSelected: (WorkoutConfig) -> Unit,
@@ -33,28 +39,23 @@ fun WorkoutListScreen(
 ) {
     val workouts by viewModel.availableWorkouts.collectAsState()
     val context = LocalContext.current
-    
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.importWorkout(context, it) }
-    }
+
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let { viewModel.importWorkout(context, it) }
+        }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("My Workouts") })
-        },
+        topBar = { TopAppBar(title = { Text("My Workouts") }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { launcher.launch("application/json") }) {
                 Icon(Icons.Default.Add, contentDescription = "Add Workout")
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+        LazyColumn(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
             items(workouts) { workout ->
                 ListItem(
                     headlineContent = { Text(workout.name) },

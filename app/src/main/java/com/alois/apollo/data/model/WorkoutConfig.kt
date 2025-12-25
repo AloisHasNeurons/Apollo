@@ -2,12 +2,15 @@ package com.alois.apollo.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Configuration for a full workout routine.
+ * @property id Unique string ID (e.g., "greek_statue_a").
+ * @property name Display name (English default).
+ * @property exercises Ordered list of exercises.
+ */
 @Serializable
 data class WorkoutConfig(
     val id: String,
-    // Keep raw name/focus for backward compatibility or serialization if needed, 
-    // but we will primarily use the localized versions.
-    // Actually, let's just use name/focus as English default and add Fr.
     val name: String,
     val nameFr: String? = null,
     val focus: String,
@@ -16,6 +19,13 @@ data class WorkoutConfig(
     val exercises: List<ExerciseConfig>
 )
 
+/**
+ * Configuration for a single exercise.
+ * @property id Unique exercise ID.
+ * @property targetReps Baseline target reps for a beginner.
+ * @property unit Whether it's rep-based or time-based.
+ * @property upgradeCriteria Description of when to move to a harder variation.
+ */
 @Serializable
 data class ExerciseConfig(
     val id: String,
@@ -24,7 +34,7 @@ data class ExerciseConfig(
     val descriptionEn: String,
     val descriptionFr: String,
     val repRange: String, // e.g., "3-5"
-    val targetedReps: Int,
+    val targetReps: Int,
     val unit: ExerciseUnit,
     val restSeconds: Int,
     val harderVariation: String? = null,
@@ -34,5 +44,6 @@ data class ExerciseConfig(
 
 @Serializable
 enum class ExerciseUnit {
-    REPS, TIME
+    REPS,
+    TIME
 }
