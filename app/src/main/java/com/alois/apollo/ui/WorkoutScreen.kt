@@ -144,20 +144,42 @@ fun WorkoutScreen(
             )
         },
         bottomBar = {
-            Box(
+            androidx.compose.foundation.layout.Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                contentAlignment = Alignment.CenterEnd
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                val canGoBack = currentSetIndex > 0 || currentExerciseIndex > 0
+
+                if (canGoBack) {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { viewModel.previousStep() },
+                        modifier = Modifier
+                            .height(56.dp)
+                            .weight(1f),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            if (isFrench) "Précédent" else "Previous",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
                 Button(
                     onClick = { viewModel.nextStep() },
                     modifier = Modifier
                         .height(56.dp)
-                        .fillMaxWidth(),
+                        .weight(1f),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
                 ) {
-                    Text("Next", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (isFrench) "Suivant" else "Next",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
             }
         }
@@ -348,9 +370,14 @@ fun TimerSection(viewModel: WorkoutViewModel) {
     val timerSeconds by viewModel.timerSeconds.collectAsState()
     val isRunning by viewModel.isTimerRunning.collectAsState()
     val isDelaying by viewModel.isDelaying.collectAsState()
+    val suggestedReps by viewModel.suggestedReps.collectAsState()
     
     val currentExercise = viewModel.getCurrentExercise()
-    val totalTime = (currentExercise?.targetedReps ?: 30).toFloat()
+    val totalTime = if (currentExercise != null) {
+        (suggestedReps[currentExercise.id] ?: currentExercise.targetedReps).toFloat()
+    } else {
+        30f
+    }
     val rawProgress = if (totalTime > 0) timerSeconds / totalTime else 0f
 
     // Smooth animated progress for high refresh rate displays

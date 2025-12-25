@@ -166,6 +166,21 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         resetTimer()
     }
 
+    fun previousStep() {
+        val workout = _activeWorkout.value ?: return
+        stopTimer()
+
+        val totalExercises = workout.exercises.size
+
+        if (_currentExerciseIndex.value > 0) {
+            _currentExerciseIndex.value -= 1
+        } else if (_currentSetIndex.value > 0) {
+            _currentSetIndex.value -= 1
+            _currentExerciseIndex.value = totalExercises - 1
+        }
+        resetTimer()
+    }
+
     fun saveWorkout() {
         val workout = _activeWorkout.value ?: return
         viewModelScope.launch {
@@ -232,7 +247,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private fun resetTimer() {
         val exercise = getCurrentExercise()
         if (exercise?.unit == ExerciseUnit.TIME) {
-            _timerSeconds.value = exercise.targetedReps.toFloat()
+            val suggested = _suggestedReps.value[exercise.id] ?: exercise.targetedReps
+            _timerSeconds.value = suggested.toFloat()
         } else {
             _timerSeconds.value = 0f
         }
@@ -283,9 +299,12 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun calculateSuggestedReps(exercise: ExerciseConfig): Int {
         val lastRecords = db.workoutDao().getLastTwoRecordsForExercise(exercise.id)
-        if (lastRecords.size < 2) return exercise.targetedReps
-        val hitTargetInAllSets = lastRecords.all { record -> record.sets.all { it >= record.targetReps } }
-        return if (hitTargetInAllSets) exercise.targetedReps + 1 else exercise.targetedReps
+        val lastRecord = lastRecords.firstOrNull() // Order is DESC locally, so first is latest
+        return com.alois.apollo.logic.GoalCalculator.calculateSuggestedReps(
+            lastRecord,
+            exercise.targetedReps,
+            exercise.unit
+        )
     }
 
     fun seedTestData() {
