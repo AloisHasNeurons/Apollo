@@ -75,6 +75,13 @@ import java.util.Date
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The home screen of the application. Displays available workouts, statistics (heatmap, volume
+ * graph), and navigation drawer.
+ *
+ * @param onStartWorkout Callback when a workout is started.
+ * @param onOpenHistory Callback to view history.
+ */
 @Composable
 fun MainScreen(
     onStartWorkout: () -> Unit,
@@ -88,11 +95,10 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { viewModel.importWorkout(context, it) }
-    }
+    val launcher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let { viewModel.importWorkout(context, it) }
+        }
 
     var showSettingsDialog by remember { mutableStateOf(false) }
 
@@ -108,10 +114,13 @@ fun MainScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.setLanguage(false) } // English
-                            .padding(vertical = 12.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setLanguage(false)
+                                } // English
+                                .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         androidx.compose.material3.RadioButton(
@@ -122,10 +131,11 @@ fun MainScreen(
                         Text("English")
                     }
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.setLanguage(true) } // French
-                            .padding(vertical = 12.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.setLanguage(true) } // French
+                                .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         androidx.compose.material3.RadioButton(
@@ -138,9 +148,9 @@ fun MainScreen(
                 }
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { showSettingsDialog = false }) {
-                    Text("OK")
-                }
+                androidx.compose.material3.TextButton(
+                    onClick = { showSettingsDialog = false }
+                ) { Text("OK") }
             }
         )
     }
@@ -161,7 +171,9 @@ fun MainScreen(
                 )
                 NavigationDrawerItem(
                     icon = { Icon(Icons.Default.FileUpload, contentDescription = null) },
-                    label = { Text(if (isFrench) "Importer un entraînement" else "Import Workout") },
+                    label = {
+                        Text(if (isFrench) "Importer un entraînement" else "Import Workout")
+                    },
                     selected = false,
                     onClick = {
                         scope.launch { drawerState.close() }
@@ -220,29 +232,42 @@ fun MainScreen(
 
                     androidx.compose.animation.AnimatedVisibility(
                         visible = visible,
-                        enter = androidx.compose.animation.fadeIn(
-                            animationSpec = androidx.compose.animation.core.tween(300)
-                        ) + androidx.compose.animation.slideInVertically(
-                            initialOffsetY = { it / 2 },
-                            animationSpec = androidx.compose.animation.core.tween(300)
-                        )
+                        enter =
+                            androidx.compose.animation.fadeIn(
+                                animationSpec =
+                                    androidx.compose.animation.core.tween(300)
+                            ) +
+                                    androidx.compose.animation.slideInVertically(
+                                        initialOffsetY = { it / 2 },
+                                        animationSpec =
+                                            androidx.compose.animation.core.tween(
+                                                300
+                                            )
+                                    )
                     ) {
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.startWorkout(workout)
-                                    onStartWorkout()
-                                },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.startWorkout(workout)
+                                        onStartWorkout()
+                                    },
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = if (isFrench && workout.nameFr != null) workout.nameFr!! else workout.name,
+                                    text =
+                                        if (isFrench && workout.nameFr != null)
+                                            workout.nameFr
+                                        else workout.name,
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = if (isFrench && workout.focusFr != null) workout.focusFr!! else workout.focus,
+                                    text =
+                                        if (isFrench && workout.focusFr != null)
+                                            workout.focusFr
+                                        else workout.focus,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
@@ -259,18 +284,15 @@ fun MainScreen(
                     )
                 }
 
-                item {
-                    WorkoutHeatmap(history, isFrench)
-                }
+                item { WorkoutHeatmap(history, isFrench) }
 
-                item {
-                    VolumeLoadGraph(history, isFrench)
-                }
+                item { VolumeLoadGraph(history, isFrench) }
             }
         }
     }
 }
 
+/** Displays a GitHub-style contribution graph (heatmap) of workout frequency. */
 @Composable
 fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
     val today = Calendar.getInstance()
@@ -287,14 +309,15 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
     )
 
     val months = mutableListOf<MonthColumn>()
-    val startCal = Calendar.getInstance().apply {
-        add(Calendar.MONTH, -3)
-        set(Calendar.DAY_OF_MONTH, 1)
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }
+    val startCal =
+        Calendar.getInstance().apply {
+            add(Calendar.MONTH, -3)
+            set(Calendar.DAY_OF_MONTH, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
 
     // Process up to 4 months (current + 3 previous)
     repeat(4) {
@@ -304,7 +327,8 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
         val currentMonth = startCal.get(Calendar.MONTH)
         val currentYear = startCal.get(Calendar.YEAR)
         val monthName =
-            java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault()).format(startCal.time)
+            java.text.SimpleDateFormat("MMM", java.util.Locale.getDefault())
+                .format(startCal.time)
 
         while (startCal.get(Calendar.MONTH) == currentMonth &&
             startCal.get(Calendar.YEAR) == currentYear
@@ -325,27 +349,31 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
     }
 
     // Count workouts per day
-    val workoutCounts = history.groupBy { session ->
-        val cal = Calendar.getInstance()
-        cal.timeInMillis = session.date
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        cal.timeInMillis
-    }.mapValues { it.value.size }
+    val workoutCounts =
+        history
+            .groupBy { session ->
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = session.date
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
+                cal.set(Calendar.MILLISECOND, 0)
+                cal.timeInMillis
+            }
+            .mapValues { it.value.size }
 
-    val dateFormat =
-        remember { java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.getDefault()) }
+    val dateFormat = remember {
+        java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.getDefault())
+    }
     var selectedCell by remember { mutableStateOf<Pair<Long, Int>?>(null) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.3f
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
-        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -356,9 +384,7 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
             Spacer(Modifier.height(12.dp))
 
             Box {
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState())
-                ) {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     months.forEachIndexed { monthIdx, monthColumn ->
                         // Month separator (smaller spacing)
                         if (monthIdx > 0) {
@@ -381,42 +407,60 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
                             Row(horizontalArrangement = Arrangement.spacedBy(cellSpacing)) {
                                 val columns = monthColumn.days.chunked(7)
                                 columns.forEach { columnDays ->
-                                    Column(verticalArrangement = Arrangement.spacedBy(cellSpacing)) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(cellSpacing)
+                                    ) {
                                         columnDays.forEach { dayCell ->
                                             val workoutCount = workoutCounts[dayCell.date] ?: 0
-                                            val intensity = when {
-                                                workoutCount == 0 -> 0f
-                                                workoutCount == 1 -> 0.5f
-                                                workoutCount >= 2 -> 1f
-                                                else -> 0f
-                                            }
+                                            val intensity =
+                                                when {
+                                                    workoutCount == 0 -> 0f
+                                                    workoutCount == 1 -> 0.5f
+                                                    workoutCount >= 2 -> 1f
+                                                    else -> 0f
+                                                }
 
                                             Box(
-                                                modifier = Modifier
-                                                    .size(cellSize)
-                                                    .background(
-                                                        when {
-                                                            intensity == 0f -> MaterialTheme.colorScheme.surfaceVariant
-                                                            intensity < 1f -> MaterialTheme.colorScheme.primary.copy(
-                                                                alpha = 0.5f
-                                                            )
+                                                modifier =
+                                                    Modifier
+                                                        .size(cellSize)
+                                                        .background(
+                                                            when {
+                                                                intensity == 0f ->
+                                                                    MaterialTheme
+                                                                        .colorScheme
+                                                                        .surfaceVariant
 
-                                                            else -> MaterialTheme.colorScheme.primary
-                                                        },
-                                                        RoundedCornerShape(2.dp)
-                                                    )
-                                                    .pointerInput(dayCell.date) {
-                                                        detectTapGestures(
-                                                            onLongPress = {
-                                                                selectedCell =
-                                                                    dayCell.date to workoutCount
+                                                                intensity < 1f ->
+                                                                    MaterialTheme
+                                                                        .colorScheme
+                                                                        .primary
+                                                                        .copy(
+                                                                            alpha =
+                                                                                0.5f
+                                                                        )
+
+                                                                else ->
+                                                                    MaterialTheme
+                                                                        .colorScheme
+                                                                        .primary
                                                             },
-                                                            onPress = {
-                                                                awaitRelease()
-                                                                selectedCell = null
-                                                            }
+                                                            RoundedCornerShape(2.dp)
                                                         )
-                                                    }
+                                                        .pointerInput(dayCell.date) {
+                                                            detectTapGestures(
+                                                                onLongPress = {
+                                                                    selectedCell =
+                                                                        dayCell.date to
+                                                                                workoutCount
+                                                                },
+                                                                onPress = {
+                                                                    awaitRelease()
+                                                                    selectedCell =
+                                                                        null
+                                                                }
+                                                            )
+                                                        }
                                             )
                                         }
                                     }
@@ -429,14 +473,15 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
                 // Tooltip overlay - positioned at top center
                 selectedCell?.let { (date, count) ->
                     Box(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .offset(y = (-8).dp)
-                            .background(
-                                MaterialTheme.colorScheme.inverseSurface,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .offset(y = (-8).dp)
+                                .background(
+                                    MaterialTheme.colorScheme.inverseSurface,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
@@ -446,7 +491,15 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (count == 0) (if (isFrench) "Pas d'entraînement" else "No workout") else "$count " + (if (isFrench) "entraînement" else "workout") + if (count > 1) "s" else "",
+                                text =
+                                    if (count == 0)
+                                        (if (isFrench) "Pas d'entraînement"
+                                        else "No workout")
+                                    else
+                                        "$count " +
+                                                (if (isFrench) "entraînement"
+                                                else "workout") +
+                                                if (count > 1) "s" else "",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.inverseOnSurface
                             )
@@ -458,6 +511,7 @@ fun WorkoutHeatmap(history: List<WorkoutSession>, isFrench: Boolean) {
     }
 }
 
+/** Displays a line graph of total volume load over time. */
 @Composable
 fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
     val sortedHistory = history.sortedBy { it.date }
@@ -466,18 +520,16 @@ fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                    alpha = 0.3f
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 )
-            )
         ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    if (isFrench) "Terminez plus d'entraînements pour voir votre progression" else "Complete more workouts to see your progression",
+                    if (isFrench) "Terminez plus d'entraînements pour voir votre progression"
+                    else "Complete more workouts to see your progression",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -509,11 +561,11 @@ fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .height(280.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.3f
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
-        )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -553,31 +605,31 @@ fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
 
                 // Graph area
                 Column(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                    ) {
+                    Box(modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()) {
                         Canvas(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .pointerInput(sortedHistory) {
-                                    detectTapGestures(
-                                        onLongPress = { offset ->
-                                            // Find closest point
-                                            val closest = points.withIndex().minByOrNull {
-                                                abs(it.value.x - offset.x)
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(sortedHistory) {
+                                        detectTapGestures(
+                                            onLongPress = { offset ->
+                                                // Find closest point
+                                                val closest =
+                                                    points.withIndex().minByOrNull {
+                                                        abs(it.value.x - offset.x)
+                                                    }
+                                                if (closest != null) {
+                                                    selectedPointIndex = closest.index
+                                                }
+                                            },
+                                            onPress = {
+                                                awaitRelease()
+                                                selectedPointIndex = null
                                             }
-                                            if (closest != null) {
-                                                selectedPointIndex = closest.index
-                                            }
-                                        },
-                                        onPress = {
-                                            awaitRelease()
-                                            selectedPointIndex = null
-                                        }
-                                    )
-                                }
+                                        )
+                                    }
                         ) {
                             val width = size.width
                             val height = size.height
@@ -596,18 +648,23 @@ fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
                             }
 
                             // Calculate and store points
-                            points = sortedHistory.mapIndexed { index, session ->
-                                val x = index * spacing
-                                val normalizedVolume = normalizeVolume(session.volumeLoad)
-                                val y = height - ((normalizedVolume - minVolume) / range * height)
-                                Offset(x, y)
-                            }
+                            points =
+                                sortedHistory.mapIndexed { index, session ->
+                                    val x = index * spacing
+                                    val normalizedVolume = normalizeVolume(session.volumeLoad)
+                                    val y =
+                                        height -
+                                                ((normalizedVolume - minVolume) / range *
+                                                        height)
+                                    Offset(x, y)
+                                }
 
                             // Draw the line path
-                            val path = Path().apply {
-                                moveTo(points.first().x, points.first().y)
-                                points.forEach { lineTo(it.x, it.y) }
-                            }
+                            val path =
+                                Path().apply {
+                                    moveTo(points.first().x, points.first().y)
+                                    points.forEach { lineTo(it.x, it.y) }
+                                }
 
                             drawPath(
                                 path = path,
@@ -640,14 +697,19 @@ fun VolumeLoadGraph(history: List<WorkoutSession>, isFrench: Boolean) {
                                 val session = sortedHistory[idx]
 
                                 Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopCenter)
-                                        .offset(y = (-8).dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.inverseSurface,
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.TopCenter)
+                                            .offset(y = (-8).dp)
+                                            .background(
+                                                MaterialTheme.colorScheme
+                                                    .inverseSurface,
+                                                RoundedCornerShape(8.dp)
+                                            )
+                                            .padding(
+                                                horizontal = 12.dp,
+                                                vertical = 8.dp
+                                            )
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(

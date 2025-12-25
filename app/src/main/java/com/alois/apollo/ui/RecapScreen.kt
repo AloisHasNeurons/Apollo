@@ -46,6 +46,15 @@ import com.alois.apollo.data.local.ExerciseRecord
 import com.alois.apollo.data.model.WorkoutConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Screen displaying the summary of a workout session. Used for both editing the results before
+ * saving (Recap) and viewing past sessions (ReadOnly).
+ *
+ * @param workout The workout configuration.
+ * @param results The recorded reps for each exercise.
+ * @param isReadOnly Whether the screen is for viewing history only.
+ * @param onSave Callback to save the session.
+ */
 @Composable
 fun RecapScreen(
     workout: WorkoutConfig,
@@ -65,11 +74,12 @@ fun RecapScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    val title = if (isReadOnly) {
-                        if (isFrench) "Résumé de la séance" else "Session Summary"
-                    } else {
-                        if (isFrench) "Récapitulatif" else "Workout Recap"
-                    }
+                    val title =
+                        if (isReadOnly) {
+                            if (isFrench) "Résumé de la séance" else "Session Summary"
+                        } else {
+                            if (isFrench) "Récapitulatif" else "Workout Recap"
+                        }
                     Text(title)
                 },
                 actions = {
@@ -89,16 +99,10 @@ fun RecapScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = onCancel,
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
                         Text(if (isFrench) "Annuler" else "Cancel")
                     }
-                    Button(
-                        onClick = onSave,
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Button(onClick = onSave, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.Save, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(if (isFrench) "Enregistrer" else "Save")
@@ -115,30 +119,39 @@ fun RecapScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(workout.exercises) { exercise ->
-                val sets = results[exercise.id] ?: listOf(0, 0, 0)
-                
+                val repsPerSet = results[exercise.id] ?: listOf(0, 0, 0)
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.surfaceVariant.copy(
+                                    alpha = 0.5f
+                                )
+                        )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = if (viewModel.isFrench()) exercise.nameFr else exercise.nameEn,
+                            text =
+                                if (viewModel.isFrench()) exercise.nameFr
+                                else exercise.nameEn,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            sets.forEachIndexed { index, value ->
+                            repsPerSet.forEachIndexed { index, value ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(text = "Set ${index + 1}", style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        text = "Set ${index + 1}",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
                                     if (isReadOnly) {
                                         Text(
                                             text = value.toString(),
@@ -146,17 +159,26 @@ fun RecapScreen(
                                             fontWeight = FontWeight.Medium
                                         )
                                     } else {
-                                        var textValue by remember { mutableStateOf(value.toString()) }
+                                        var textValue by remember {
+                                            mutableStateOf(value.toString())
+                                        }
                                         OutlinedTextField(
                                             value = textValue,
                                             onValueChange = {
                                                 textValue = it
                                                 it.toIntOrNull()?.let { newVal ->
-                                                    viewModel.updateResult(exercise.id, index, newVal)
+                                                    viewModel.updateResult(
+                                                        exercise.id,
+                                                        index,
+                                                        newVal
+                                                    )
                                                 }
                                             },
                                             modifier = Modifier.width(70.dp),
-                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            keyboardOptions =
+                                                KeyboardOptions(
+                                                    keyboardType = KeyboardType.Number
+                                                ),
                                             singleLine = true
                                         )
                                     }
@@ -178,20 +200,18 @@ fun ReadOnlyRecapScreen(
 ) {
     // Handle system back gesture
     androidx.activity.compose.BackHandler { onBack() }
-    
+
     var records by remember { mutableStateOf<List<ExerciseRecord>>(emptyList()) }
     val workouts by viewModel.availableWorkouts.collectAsState()
     val history by viewModel.history.collectAsState()
-    
+
     val session = history.find { it.id == sessionId }
     val workoutConfig = workouts.find { it.id == session?.workoutId }
 
-    LaunchedEffect(sessionId) {
-        records = viewModel.getSessionDetails(sessionId)
-    }
+    LaunchedEffect(sessionId) { records = viewModel.getSessionDetails(sessionId) }
 
     if (workoutConfig != null && session != null) {
-        val resultsMap = records.associate { it.exerciseId to it.sets }
+        val resultsMap = records.associate { it.exerciseId to it.repsPerSet }
         RecapScreen(
             workout = workoutConfig,
             results = resultsMap,

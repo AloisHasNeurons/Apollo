@@ -12,7 +12,7 @@
       "descriptionEn": "Standard push-ups. Chest to floor.",
       "descriptionFr": "Pompes standard. Poitrine au sol.",
       "repRange": "10-15",
-      "targetedReps": 12,
+      "targetReps": 12,
       "unit": "REPS",
       "restSeconds": 90
     },
@@ -23,7 +23,7 @@
       "descriptionEn": "Core stability. Don't sag hips.",
       "descriptionFr": "Stabilité du tronc. Ne creusez pas le dos.",
       "repRange": "30-60s",
-      "targetedReps": 45,
+      "targetReps": 45,
       "unit": "TIME",
       "restSeconds": 60
     },
@@ -34,7 +34,7 @@
       "descriptionEn": "Vertical push for shoulders.",
       "descriptionFr": "Poussée verticale pour les épaules.",
       "repRange": "8-12",
-      "targetedReps": 10,
+      "targetReps": 10,
       "unit": "REPS",
       "restSeconds": 90
     }

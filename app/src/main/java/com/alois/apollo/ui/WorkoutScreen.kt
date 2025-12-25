@@ -49,6 +49,14 @@ import com.alois.apollo.data.model.ExerciseUnit
 import kotlin.math.ceil
 
 @OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Main active workout screen. Handles the display of the current exercise, timer or rep counter,
+ * and navigation between sets/exercises.
+ *
+ * @param onBack Callback when the user wants to exit.
+ * @param onShowRecap Callback when the workout is finished.
+ * @param viewModel The view model managing workout state.
+ */
 @Composable
 fun WorkoutScreen(
     onBack: () -> Unit,
@@ -66,9 +74,7 @@ fun WorkoutScreen(
     var showExitDialog by remember { mutableStateOf(false) }
 
     // Intercept back gesture
-    androidx.activity.compose.BackHandler {
-        showExitDialog = true
-    }
+    androidx.activity.compose.BackHandler { showExitDialog = true }
 
     if (showExitDialog) {
         androidx.compose.material3.AlertDialog(
@@ -111,11 +117,12 @@ fun WorkoutScreen(
     }
 
     val exercise = workout?.exercises?.getOrNull(currentExerciseIndex)
-    val totalSets = 3 
+    val totalSets = 3
     val totalExercises = workout?.exercises?.size ?: 1
 
     // Animate progress smoothly
-    val animatedProgress by animateFloatAsState(
+    val animatedProgress by
+    animateFloatAsState(
         targetValue = (currentExerciseIndex + 1).toFloat() / totalExercises,
         label = "progress"
     )
@@ -126,7 +133,10 @@ fun WorkoutScreen(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (isFrench) "Série ${currentSetIndex + 1} / $totalSets" else "Set ${currentSetIndex + 1} / $totalSets",
+                            text =
+                                if (isFrench)
+                                    "Série ${currentSetIndex + 1} / $totalSets"
+                                else "Set ${currentSetIndex + 1} / $totalSets",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -134,13 +144,19 @@ fun WorkoutScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { showExitDialog = true }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                colors =
+                    androidx.compose.material3.TopAppBarDefaults
+                        .centerAlignedTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            titleContentColor =
+                                MaterialTheme.colorScheme.onSurface
+                        )
             )
         },
         bottomBar = {
@@ -184,28 +200,30 @@ fun WorkoutScreen(
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
             LinearProgressIndicator(
                 progress = { animatedProgress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp) // Thicker progress bar
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(8.dp) // Thicker progress bar
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                 strokeCap = StrokeCap.Round,
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
-            
+
             Text(
-                text = if (isFrench) "Exercice ${currentExerciseIndex + 1} / $totalExercises" else "Exercise ${currentExerciseIndex + 1} / $totalExercises",
+                text =
+                    if (isFrench) "Exercice ${currentExerciseIndex + 1} / $totalExercises"
+                    else "Exercise ${currentExerciseIndex + 1} / $totalExercises",
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 8.dp, bottom = 8.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 8.dp, bottom = 8.dp),
                 color = MaterialTheme.colorScheme.secondary,
                 letterSpacing = 2.sp
             )
@@ -214,13 +232,15 @@ fun WorkoutScreen(
             androidx.compose.animation.AnimatedContent(
                 targetState = exercise,
                 transitionSpec = {
-                    androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInHorizontally { it } togetherWith
-                            androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutHorizontally { -it }
+                    androidx.compose.animation.fadeIn() +
+                            androidx.compose.animation.slideInHorizontally { it } togetherWith
+                            androidx.compose.animation.fadeOut() +
+                            androidx.compose.animation.slideOutHorizontally { -it }
                 },
                 label = "exercise_transition"
             ) { targetExercise ->
                 targetExercise?.let { ex ->
-                    val suggested = suggestedReps[ex.id] ?: ex.targetedReps
+                    val suggested = suggestedReps[ex.id] ?: ex.targetReps
                     val currentVal = workoutResults[ex.id]?.getOrNull(currentSetIndex) ?: suggested
 
                     Column(
@@ -256,18 +276,14 @@ fun WorkoutScreen(
                                     initialReps = currentVal,
                                     targetReps = suggested,
                                     onRepsChanged = {
-                                        viewModel.updateResult(
-                                            ex.id,
-                                            currentSetIndex,
-                                            it
-                                        )
+                                        viewModel.updateResult(ex.id, currentSetIndex, it)
                                     }
                                 )
                             }
                         }
 
                         // Spacer to push content up slightly from bottom bar
-                        Spacer(modifier = Modifier.height(80.dp)) 
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
@@ -275,6 +291,13 @@ fun WorkoutScreen(
     }
 }
 
+/**
+ * Interactive section for logging reps.
+ *
+ * @param initialReps The starting value (usually suggested reps or last set).
+ * @param targetReps The goal for this set.
+ * @param onRepsChanged Callback when user adjusts the rep count.
+ */
 @Composable
 fun RepsSection(initialReps: Int, targetReps: Int, onRepsChanged: (Int) -> Unit) {
     // Use targetReps as the starting value, not initialReps (which may be 0 from empty results)
@@ -286,30 +309,34 @@ fun RepsSection(initialReps: Int, targetReps: Int, onRepsChanged: (Int) -> Unit)
     }
 
     // Update parent when local state changes
-    LaunchedEffect(reps) {
-        onRepsChanged(reps)
-    }
+    LaunchedEffect(reps) { onRepsChanged(reps) }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         androidx.compose.animation.AnimatedContent(
             targetState = reps,
             transitionSpec = {
                 if (targetState > initialState) {
-                    androidx.compose.animation.slideInVertically { it } + androidx.compose.animation.fadeIn() togetherWith
-                            androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut()
+                    androidx.compose.animation.slideInVertically { it } +
+                            androidx.compose.animation.fadeIn() togetherWith
+                            androidx.compose.animation.slideOutVertically { -it } +
+                            androidx.compose.animation.fadeOut()
                 } else {
-                    androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn() togetherWith
-                            androidx.compose.animation.slideOutVertically { it } + androidx.compose.animation.fadeOut()
-                }.using(androidx.compose.animation.SizeTransform(clip = false))
+                    androidx.compose.animation.slideInVertically { -it } +
+                            androidx.compose.animation.fadeIn() togetherWith
+                            androidx.compose.animation.slideOutVertically { it } +
+                            androidx.compose.animation.fadeOut()
+                }
+                    .using(androidx.compose.animation.SizeTransform(clip = false))
             },
             label = "reps_counter"
         ) { count ->
             Text(
                 text = count.toString(),
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 120.sp,
-                    lineHeight = 120.sp
-                ),
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = 120.sp,
+                        lineHeight = 120.sp
+                    ),
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -334,13 +361,17 @@ fun RepsSection(initialReps: Int, targetReps: Int, onRepsChanged: (Int) -> Unit)
             androidx.compose.material3.FilledIconButton(
                 onClick = { if (reps > 0) reps-- },
                 modifier = Modifier.size(72.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
             ) {
                 Icon(
-                    imageVector = Icons.Default.Remove, // Need to make sure Remove is imported or use a different icon
+                    imageVector =
+                        Icons.Default
+                            .Remove, // Need to make sure Remove is imported or use a
+                    // different icon
                     contentDescription = "Decrease reps",
                     modifier = Modifier.size(32.dp)
                 )
@@ -350,10 +381,11 @@ fun RepsSection(initialReps: Int, targetReps: Int, onRepsChanged: (Int) -> Unit)
             androidx.compose.material3.FilledIconButton(
                 onClick = { reps++ },
                 modifier = Modifier.size(72.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -365,28 +397,35 @@ fun RepsSection(initialReps: Int, targetReps: Int, onRepsChanged: (Int) -> Unit)
     }
 }
 
+/**
+ * Timer section for time-based exercises. Shows a circular progress indicator and controls for
+ * play/pause.
+ */
 @Composable
 fun TimerSection(viewModel: WorkoutViewModel) {
     val timerSeconds by viewModel.timerSeconds.collectAsState()
     val isRunning by viewModel.isTimerRunning.collectAsState()
     val isDelaying by viewModel.isDelaying.collectAsState()
     val suggestedReps by viewModel.suggestedReps.collectAsState()
-    
+
     val currentExercise = viewModel.getCurrentExercise()
-    val totalTime = if (currentExercise != null) {
-        (suggestedReps[currentExercise.id] ?: currentExercise.targetedReps).toFloat()
-    } else {
-        30f
-    }
+    val totalTime =
+        if (currentExercise != null) {
+            (suggestedReps[currentExercise.id] ?: currentExercise.targetReps).toFloat()
+        } else {
+            30f
+        }
     val rawProgress = if (totalTime > 0) timerSeconds / totalTime else 0f
 
     // Smooth animated progress for high refresh rate displays
-    val animatedProgress by animateFloatAsState(
+    val animatedProgress by
+    animateFloatAsState(
         targetValue = rawProgress,
-        animationSpec = tween(
-            durationMillis = 100,
-            easing = androidx.compose.animation.core.LinearEasing
-        ),
+        animationSpec =
+            tween(
+                durationMillis = 100,
+                easing = androidx.compose.animation.core.LinearEasing
+            ),
         label = "timer_progress"
     )
 
@@ -398,29 +437,41 @@ fun TimerSection(viewModel: WorkoutViewModel) {
             trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
             strokeCap = StrokeCap.Round,
         )
-        
+
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = if (isDelaying) "Get Ready!" else "${ceil(timerSeconds).toInt()}",
-                style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = if (isDelaying) 40.sp else 80.sp
-                ),
+                style =
+                    MaterialTheme.typography.displayLarge.copy(
+                        fontSize = if (isDelaying) 40.sp else 80.sp
+                    ),
                 fontWeight = FontWeight.Bold,
-                color = if (timerSeconds <= 5 && isRunning && !isDelaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                color =
+                    if (timerSeconds <= 5 && isRunning && !isDelaying)
+                        MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             IconButton(
                 onClick = { viewModel.toggleTimer() },
                 modifier = Modifier.size(72.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = if (isRunning) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isRunning) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary
-                )
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor =
+                            if (isRunning)
+                                MaterialTheme.colorScheme.secondaryContainer
+                            else MaterialTheme.colorScheme.primary,
+                        contentColor =
+                            if (isRunning)
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            else MaterialTheme.colorScheme.onPrimary
+                    )
             ) {
                 Icon(
-                    imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    imageVector =
+                        if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isRunning) "Pause" else "Play",
                     modifier = Modifier.size(40.dp)
                 )
