@@ -259,14 +259,14 @@ fun MainScreen(
                                 Text(
                                     text =
                                         if (isFrench && workout.nameFr != null)
-                                            workout.nameFr!!
+                                            workout.nameFr
                                         else workout.name,
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
                                     text =
                                         if (isFrench && workout.focusFr != null)
-                                            workout.focusFr!!
+                                            workout.focusFr
                                         else workout.focus,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.secondary

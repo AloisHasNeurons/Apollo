@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.net.Uri
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.Room
@@ -99,14 +100,16 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                                 .use { it.readText() }
                         workouts.add(Json.decodeFromString<WorkoutConfig>(jsonString))
                     }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {
+            }
 
             val filesDir = getApplication<Application>().filesDir
             filesDir.listFiles { _, name -> name.endsWith(".json") }?.forEach { file ->
                 try {
                     val jsonString = file.readText()
                     workouts.add(Json.decodeFromString<WorkoutConfig>(jsonString))
-                } catch (e: Exception) {}
+                } catch (_: Exception) {
+                }
             }
             _availableWorkouts.value = workouts.distinctBy { it.id }
         }
@@ -126,7 +129,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                     file.writeText(jsonString)
                     loadAvailableWorkouts()
                 }
-            } catch (e: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -139,7 +143,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         _currentExerciseIndex.value = 0
         _currentSetIndex.value = 0
         _showRecap.value = false
-        _workoutResults.value = workout.exercises.associate { it.id to MutableList(3) { ex -> 0 } }
+        _workoutResults.value = workout.exercises.associate { it.id to MutableList(3) { 0 } }
         resetTimer()
 
         viewModelScope.launch {
@@ -541,10 +545,7 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val sharedPref =
             getApplication<Application>()
                 .getSharedPreferences("apollo_prefs", Context.MODE_PRIVATE)
-        with(sharedPref.edit()) {
-            putBoolean("is_french", isFrench)
-            apply()
-        }
+        sharedPref.edit { putBoolean("is_french", isFrench) }
     }
 
     // Helper for non-composable contexts, though ideally we observe the flow
