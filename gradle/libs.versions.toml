@@ -11,7 +11,7 @@ composeBom = "2024.12.01"
 room = "2.6.1"
 kotlinxSerialization = "1.7.3"
 navigationCompose = "2.8.5"
-ksp = "2.1.0-1.0.29"
+ksp = "2.3.5"
 robolectric = "4.14.1"
 testCore = "1.6.1"
 
