@@ -29,7 +29,7 @@ jobs:
       run: ./gradlew lintDebug testDebugUnitTest assembleDebug --parallel --build-cache
 
     - name: Upload APK
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Apollo-Debug-APK
         path: app/build/outputs/apk/debug/app-debug.apk
